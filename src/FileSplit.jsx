@@ -11,8 +11,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.m
 const pdfPageNumber = "secondPdf_"
 const grandParentDataAtribute = "data-page-number"
 
+const fileUrl = "https://api56.ilovepdf.com/v1/download/533cnbnz8kj98q5bngqg1b5rlAd6wfth5n4zkz8rqd68h2j1xf5d6j55mA9wd22vswhq09qx9Aj38s7zyw6kzgltkzmtlmngvpqrmhxm6kmd3Anpv1qd6wh1cqjb7gb6jzncggw3xnf8ywpqykg86yw8b706swd30vfc0cpfjz45yp4hplmq";
 
-const FileSplit = ({iniitalLoadPage = 60}) => {
+const FileSplit = ({ iniitalLoadPage = 60 }) => {
 
         const [pdf, setPdf] = useState(null);
         const [numPages, setNumPages] = useState(null);
@@ -31,7 +32,6 @@ const FileSplit = ({iniitalLoadPage = 60}) => {
                         const page = await pdf.getPage(parseInt(pageNum));
                         let newScale = null
                         if (rotation == 90 || rotation == 270) {
-                                console.log('444')
                                 const originalWidth = pageDetails[pageNum].width * scale;
                                 const originalHeight = pageDetails[pageNum].height * scale;
                                 newScale = (originalWidth / originalHeight) * zoom;
@@ -69,37 +69,45 @@ const FileSplit = ({iniitalLoadPage = 60}) => {
                 }
         };
 
-        const renderPage = (pageNum, rotation) => {
+        const renderPage = (pageNum, rotation ,STATUS)  => {
                 return new Promise(async (resolve, reject) => {
                         try {
-                                const { element: canvas } = await createCanvas(pageNum, rotation);
-                                const pageContainer = document.createElement("div");
-                                // pageContainer.style.position = "relative";
-                                // pageContainer.style.display = "flex";
-                                // pageContainer.style.justifyContent = "center";
-                                pageContainer.id = pdfPageNumber + pageNum;
+                                if(STATUS =="ZOOM"){
+                                        const { element: canvas,  pageNumber} = await createCanvas(pageNum, rotation);
+                                        const parentofCanvas = document.getElementById(pdfPageNumber+pageNumber)
+                                        parentofCanvas.appendChild(canvas);
 
-                                canvas.style.display = "block";
-
-                                pageContainer.appendChild(canvas);
-
-                                const grandParent = document.createElement("div");
-                                // grandParent.style.display = `flex`;
-                                // grandParent.style.justifyContent = "center";
-                                // grandParent.style.alignItems = "center";
-                                // grandParent.style.backgroundColor = "#140fac52";
-                                // grandParent.style.marginBottom = '5px'
-
-
-                                grandParent.setAttribute(grandParentDataAtribute, pageNum);
-
-                                grandParent.appendChild(pageContainer);
-
-                                resolve({
-                                        success: true,
-                                        pageNumber: pageNum,
-                                        element: grandParent,
-                                });
+                                }else if(STATUS  =='INIT' ){
+                                        const { element: canvas } = await createCanvas(pageNum, rotation);
+                                        const pageContainer = document.createElement("div");
+                                        // pageContainer.style.position = "relative";
+                                        // pageContainer.style.display = "flex";
+                                        // pageContainer.style.justifyContent = "center";
+                                        pageContainer.id = pdfPageNumber + pageNum;
+        
+                                        // canvas.style.display = "block";
+        
+                                        pageContainer.appendChild(canvas);
+        
+                                        const grandParent = document.createElement("div");
+                                        // grandParent.style.display = `flex`;
+                                        // grandParent.style.justifyContent = "center";
+                                        // grandParent.style.alignItems = "center";
+                                        // grandParent.style.backgroundColor = "#140fac52";
+                                        // grandParent.style.marginBottom = '5px'
+        
+        
+                                        grandParent.setAttribute(grandParentDataAtribute, pageNum);
+        
+                                        grandParent.appendChild(pageContainer);
+        
+                                        resolve({
+                                                success: true,
+                                                pageNumber: pageNum,
+                                                element: grandParent,
+                                        });
+                                }
+                                
                         } catch (error) {
                                 reject(error);
                         }
@@ -122,7 +130,6 @@ const FileSplit = ({iniitalLoadPage = 60}) => {
 
         useEffect(() => {
                 const loadDocument = async () => {
-const fileUrl = "https://api56.ilovepdf.com/v1/download/533cnbnz8kj98q5bngqg1b5rlAd6wfth5n4zkz8rqd68h2j1xf5d6j55mA9wd22vswhq09qx9Aj38s7zyw6kzgltkzmtlmngvpqrmhxm6kmd3Anpv1qd6wh1cqjb7gb6jzncggw3xnf8ywpqykg86yw8b706swd30vfc0cpfjz45yp4hplmq";
                         try {
 
                                 const loadingTask = pdfjs.getDocument(fileUrl);
@@ -178,7 +185,7 @@ const fileUrl = "https://api56.ilovepdf.com/v1/download/533cnbnz8kj98q5bngqg1b5r
 
                         for (let pageNum = 1; pageNum <= Math.min(iniitalLoadPage, numPages + 1); pageNum++) {
 
-                                let response = await renderPage(pageNum);
+                                let response = await renderPage(pageNum ,null,'INIT');
 
                                 if (response?.success === true) {
                                         appendChildElement(response.element, response.pageNumber, "END");
@@ -201,19 +208,46 @@ const fileUrl = "https://api56.ilovepdf.com/v1/download/533cnbnz8kj98q5bngqg1b5r
 
 
 
-                        const minScale = 0.5;
-                        const maxScale = 3;
+                        const minScale = 1;
+                        const maxScale = 2.8;
 
                         if (newScale >= minScale && newScale <= maxScale) {
                                 setScroll(newScale);
+                                 // newScale = 1.1 start 1.2 1.3 ...
+                                 console.log((newScale-0.9),"qwqwqw")
+                                setScale(newScale-0.9)
                         }
                 }
         };
-        const handleKeyDown = (e) => {
-                if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=')) {
-                        e.preventDefault();
+        function removeCanvasesById(containerId) {
+                var container = document.getElementById(containerId);
+                if (container) {
+                        var canvases = container.getElementsByTagName('canvas');
+                        Array.from(canvases).forEach(function (canvas) {
+                                canvas.remove();
+                        });
+                } else {
+                        console.warn('Container with ID "' + containerId + '" not found.');
                 }
-        };
+        }
+        function getPageNumbersById(containerId) {
+                var container = document.getElementById(containerId);
+                var pageNumbers = [];
+                if (container) {
+                        var elements = container.querySelectorAll(`[data-page-number]`);
+                        elements.forEach(function (element) {
+                                var num = parseInt(element.getAttribute('data-page-number'), 10);
+                                if (!isNaN(num)) {
+                                        pageNumbers.push(num);
+                                }
+                        });
+                } else {
+                        console.warn('Container with ID "' + containerId + '" not found.');
+                }
+
+                return pageNumbers;
+        }
+
         useEffect(() => {
                 window.addEventListener('wheel', handleWheel, { passive: false });
 
@@ -223,21 +257,33 @@ const fileUrl = "https://api56.ilovepdf.com/v1/download/533cnbnz8kj98q5bngqg1b5r
         }, [scroll])
 
         useEffect(() => {
-                console.log(scroll)
+                removeCanvasesById('container2');
+                var pageNumbers = getPageNumbersById('container2');
+                pageNumbers.map(async(pagenumber)=>{
+
+                        let response = await renderPage(pagenumber ,null,'ZOOM');
+                })
+
         }, [scroll])
 
 
 
-        const getNumberOfColumns = (scroll) => {
-
-                const normalizedScroll = (scroll - 0.5) / (2.9 - 0.5);
-                const reversedNormalizedScroll = 1 - normalizedScroll;
-                const minColumns = 1;
-                const maxColumns = 8;
-                const numberOfColumns = Math.round(reversedNormalizedScroll * (maxColumns - minColumns) + minColumns);
-
-                return numberOfColumns;
-        };
+        function getNumberOfColumns(value) {
+                
+                if (value <= 1.1) {
+                    return 8;
+                } else if (value <= 1.3) {
+                    return 5;
+                } else if (value <= 1.5) {
+                    return 3;
+                } else if (value <= 1.7) {
+                    return 2;
+                } else if (value <= 1.8) {
+                    return 2;
+                } else {
+                    return 1;
+                }
+            }
         const numberOfColumns = getNumberOfColumns(scroll);
 
         return (
@@ -267,7 +313,6 @@ const fileUrl = "https://api56.ilovepdf.com/v1/download/533cnbnz8kj98q5bngqg1b5r
                                         </div>
                                 </div>
                         )} */}
-                        {console.log((scroll / 0.1) * 2, "!!!!")}
                         <div
                                 ref={containerRefSecond}
                                 id="container2"
