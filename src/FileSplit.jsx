@@ -10,94 +10,113 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.m
 
 const pdfPageNumber = "secondPdf_"
 const grandParentDataAtribute = "data-page-number"
+const canvasId = 'canvasId_'
 
-const fileUrl = "https://api55.ilovepdf.com/v1/download/yty37767pf4slqjx7s7y7bs0Azz5m5cslzjA35whr5m0lk7g0v4v6hw3x4lAf50A8n3ybq1ntb1zpbjg7y52zl8AhtA5yfz8ktpkp14pr7khm1nhAcvg56kjt636jwpdhyk31hctmtddy3gvqljkAjydt45znvr96r5w4lhgxg65z2m6f5yq";
+const fileUrl = "https://api59.ilovepdf.com/v1/download/k0Ag6vj5t3bx484cnybd0kdAb5f7jd30d6bzq05vkn4s093tk6vtm7pv67wflkt7hdttj0wk0A8rrj12rsy1sgw9xp2bfw784b40c27rjtz1dlApj42lr67sn267gry1yf0hAsxkkyjnpt89sqjcdwcsh3jn7wcphckz3c3rpnglbsrtn4A1";
 
-const FileSplit = ({ iniitalLoadPage = 60 }) => {
-
+const FileSplit = () => {
+        const [pagesPerScreen, setPagesperScreen] = useState(20)
         const [pdf, setPdf] = useState(null);
         const [numPages, setNumPages] = useState(null);
         const [pageDetails, setPageDetails] = useState([]);
-        const [scale, setScale] = useState(0.09);
+        const [scale, setScale] = useState(0.1);
         const [largePage, setLargePage] = useState({});
+        const [checkBox, setCheckbox] = useState([])
+        const [pagesData, setPagesData] = useState([])
+        const [requiredWidth, setRequiredWidth] = useState(0)
 
 
         const containerRefSecond = useRef(null);
 
 
 
-        const createCanvas = async (pageNum, rotation = null, scaleFactor) => {
+        const createCanvas = (pageNum, rotation = 0, scaleFactor, pdfsample = pdf) => {
+                return pdfsample.getPage(parseInt(pageNum)).then(page => {
+                        let viewport;
 
-
-                try {
-
-                        const page = await pdf.getPage(parseInt(pageNum));
-                        let newScale = null
-                        if (rotation == 90 || rotation == 270) {
+                        if (rotation === 90 || rotation === 270) {
                                 const originalWidth = pageDetails[pageNum].width * scale;
                                 const originalHeight = pageDetails[pageNum].height * scale;
-                                newScale = (originalWidth / originalHeight) * zoom;
-
-                        }
-                        let viewport = {}
-                        if (rotation) {
+                                const newScale = (originalWidth / originalHeight) * zoom;
                                 viewport = page.getViewport({
-                                        scale: scaleFactor ? scaleFactor : scale,
-                                        rotation: rotation,
+                                        scale: scaleFactor || newScale,
+                                        rotation
                                 });
                         } else {
                                 viewport = page.getViewport({
-                                        scale: scaleFactor ? scaleFactor : scale,
-                                        // rotation: 0,
-
+                                        scale: scaleFactor || scale,
+                                        rotation
                                 });
                         }
 
                         const canvas = document.createElement("canvas");
-
                         canvas.width = viewport.width;
                         canvas.height = viewport.height;
+                        canvas.id = canvasId + pageNum;
 
                         const context = canvas.getContext("2d");
                         const renderContext = {
                                 canvasContext: context,
-                                viewport: viewport,
+                                viewport
                         };
 
-                        await page.render(renderContext).promise;
-
-                        return { success: true, pageNumber: pageNum, element: canvas };
-                } catch (error) {
-
-                }
+                        return page.render(renderContext).promise.then(() => {
+                                return { success: true, pageNumber: pageNum, element: canvas };
+                        });
+                }).catch(error => {
+                        console.error('Error getting page:', error);
+                        return { success: false, pageNumber: pageNum, error };
+                });
         };
 
-        const renderPage = (pageNum, rotation, STATUS, scaleFactor = null) => {
+        const renderPage = (pageNum, rotation, STATUS, scaleFactor = null, requiredWidth, newScale, pdf) => {
                 return new Promise(async (resolve, reject) => {
                         try {
+                                console.log("path @@@ :", requiredWidth)
                                 if (STATUS == "ZOOM") {
-                                        const { element: canvas, pageNumber } = await createCanvas(pageNum, rotation, null);
-                                        const parentofCanvas = document.getElementById(pdfPageNumber + pageNumber)
-                                        parentofCanvas.appendChild(canvas);
+                                        const { element: canvas, pageNumber } = await createCanvas(pageNum, rotation, newScale, pdf);
+                                        const parentofCanvas = document.getElementById(grandParentDataAtribute + pageNumber)
+                                        parentofCanvas?.appendChild(canvas);
+                                        document.getElementById(grandParentDataAtribute + pageNum).style.height = `${requiredWidth}px`
+                                        console.log("enddddd")
+
 
                                 } else if (STATUS == 'INIT') {
+                                        console.log('INIT')
                                         const { element: canvas } = await createCanvas(pageNum, rotation, scaleFactor);
                                         const pageContainer = document.createElement("div");
-                                        // pageContainer.style.position = "relative";
+                                        pageContainer.style.position = "relative";
                                         pageContainer.style.display = "flex";
                                         pageContainer.style.justifyContent = "center";
                                         pageContainer.id = pdfPageNumber + pageNum;
 
+
                                         // canvas.style.display = "block";
 
+
+
+                                        const checkbox = document.createElement('input');
+                                        checkbox.type = 'checkbox';
+                                        checkbox.id = 'myCheckbox_' + pageNum;
+                                        checkbox.name = 'myCheckbox';
+                                        checkbox.style.position = 'absolute';
+                                        checkbox.style.left = '0';
+                                        checkbox.style.bottom = '0';
+
+
                                         pageContainer.appendChild(canvas);
+                                        pageContainer.appendChild(checkbox)
 
                                         const grandParent = document.createElement("div");
                                         grandParent.style.display = `flex`;
                                         grandParent.style.justifyContent = "center";
                                         grandParent.style.alignItems = "center";
+                                        grandParent.style.height = `${requiredWidth}px`;
+                                        grandParent.id = grandParentDataAtribute + pageNum;
                                         // grandParent.style.backgroundColor = "#140fac52";
                                         // grandParent.style.marginBottom = '5px'
+                                        pageContainer.id = pdfPageNumber + pageNum;
+
 
 
                                         grandParent.setAttribute(grandParentDataAtribute, pageNum);
@@ -116,6 +135,13 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
                         }
                 });
         };
+        const createAllCanvases = async (startPage, endPage, scaleFactor) => {
+                const pagePromises = [];
+                for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+                        pagePromises.push(createCanvas(pageNum, null, scaleFactor));
+                }
+                return Promise.all(pagePromises);
+        };
         const appendChildElement = (element, pageNum, wherToAppend) => {
                 if (containerRefSecond.current && !document.getElementById("secondPdf_" + String(pageNum))) {
                         try {
@@ -130,17 +156,40 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
                         }
                 }
         };
+        const handleRotate = (PAGE_NUM, POSITION) => {
 
-        const calulateScaleAndSet = (WIDTH, NUM_COLUMN) => {
-                const container = document.getElementById('container2');
-                let requiredWidth = 0
+
+
+        }
+        const handleCheckboxClick = (event) => {
+                console.log('Checkbox clicked, checked status:', event.target.checked, event.target.id);
+                setCheckbox()
+
+
+
+        };
+
+        const calulateScaleAndSet = (result, NUM_COLUMN, FROM = 'init', pdf) => {
+                const newBigWidthOrHeight = result.width > result.height ? result.width : result.height
+                const containerWidth = (((window.innerWidth - 48) / 100) * 80) - 16
                 let scaleFactor = 0
-                if (container) {
-                        requiredWidth = (container.offsetWidth - (10 * NUM_COLUMN)) / NUM_COLUMN;
-                        scaleFactor = requiredWidth / WIDTH;
-                        setScale(scaleFactor)
-                        return scaleFactor
+
+                let requiredWidth = Number((containerWidth - (10 * (NUM_COLUMN - 1)) - 24) / NUM_COLUMN);
+                setRequiredWidth(requiredWidth)
+                scaleFactor = requiredWidth / newBigWidthOrHeight;
+                setScale(scaleFactor)
+                if (FROM == 'HandleWheel') {
+                        // remove all pages from dom and replace the page 
+                        console.log("handle weel working", "©©©©©©©©©©©©©©©©©©©©©©©©");
+                        removeCanvasesById('container2');
+                        var pageNumbers = getPageNumbersById('container2');
+                        pageNumbers.map(async (pagenumber) => {
+                                console.log(pagenumber)
+                                let response = await renderPage(pagenumber, null, 'ZOOM', null, requiredWidth, scaleFactor, pdf);
+                        })
                 }
+
+                return { scaleFactor, requiredWidth }
         }
 
         useEffect(() => {
@@ -171,8 +220,10 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
                         }
 
                         let result = {
-                                pageNum: null,
-                                width: 0
+                                pageNum_width: null,
+                                pageNum_Height: null,
+                                height: 0,
+                                width: 0,
                         };
 
 
@@ -195,8 +246,16 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
 
                                         if (pageDetails.width > result.width) {
                                                 result = {
-                                                        pageNum: pageNum,
+                                                        ...result,
+                                                        pageNum_width: pageNum,
                                                         width: pageDetails.width
+                                                };
+                                        }
+                                        if (pageDetails.height > result.height) {
+                                                result = {
+                                                        ...result,
+                                                        pageNum_Height: pageNum,
+                                                        height: pageDetails.height
                                                 };
                                         }
 
@@ -211,20 +270,21 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
                                         });
                                 }
                         }
-
                         setLargePage(result);
-                        const scaleFactor = calulateScaleAndSet(result.width, 8)
 
-                        for (let pageNum = 1; pageNum <= Math.min(iniitalLoadPage, numPages); pageNum++) {
+                        const { scaleFactor, requiredWidth } = calulateScaleAndSet(result, 8, "init")
+                        console.log('scaleFactor', scaleFactor)
+                        try {
 
-                                let response = await renderPage(pageNum, null, 'INIT', scaleFactor);
+                                const startPage = 1;
+                                const endPage = Math.min(pagesPerScreen, numPages);
 
-                                if (response?.success === true) {
-                                        appendChildElement(response.element, response.pageNumber, "END");
-                                }
+                                const data = await createAllCanvases(startPage, endPage, scaleFactor);
+                                setPagesData(data)
+                                console.log(data, "@@@@$$$$$");
+                        } catch (error) {
+                                console.error('Error rendering pages:', error);
                         }
-                        // setLoader(false);
-                        // setCurrentPage(1)
                 };
 
                 renderStart();
@@ -233,6 +293,8 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
         const [scroll, setScroll] = useState(1);
 
         const handleWheel = (e) => {
+                console.log('pdf $$$', pdf, largePage)
+
                 if (e.ctrlKey) {
                         e.preventDefault()
                         const zoomFactor = 0.1;
@@ -254,26 +316,16 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
                                 const numberOfColumns = getNumberOfColumns(newScale);
                                 setNumberOfColumns(numberOfColumns)
                                 if (newScale < 1.8 && newScale > 0.9) {
-                                        console.log(largePage.width, numberOfColumns, newScale, "QQQQQQQ")
-                                        calulateScaleAndSet(largePage.width, numberOfColumns)
+                                        console.log("checkpoint 1 ", newScale)
+                                        calulateScaleAndSet(largePage, numberOfColumns, "HandleWheel", pdf)
 
-                                } else { // one column 
-                                        // console.log('###')
-                                        // if (scroll < newScale) //zoom in
-                                        //         setScale(scale + 0.1)
-                                        // else 
-                                        //         setScale(scale - 0.1)
-
-
+                                } else {
                                 }
-
-
-
                         }
 
                 }
         };
-        console.log(largePage.width, "wwwwwwwww")
+
         function removeCanvasesById(containerId) {
                 var container = document.getElementById(containerId);
                 if (container) {
@@ -306,20 +358,24 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
         useEffect(() => {
                 window.addEventListener('wheel', handleWheel, { passive: false });
 
+                containerRefSecond.current.addEventListener('click', handleCheckboxClick);
+                console.log("handlescroll   ")
                 return () => {
                         window.removeEventListener('wheel', handleWheel);
+                        containerRefSecond.current.addEventListener('click', handleCheckboxClick);
                 };
-        }, [scroll, largePage])
+        }, [scroll, pdf, largePage])
 
-        useEffect(() => {
-                removeCanvasesById('container2');
-                var pageNumbers = getPageNumbersById('container2');
 
-                pageNumbers.map(async (pagenumber) => {
-                        let response = await renderPage(pagenumber, null, 'ZOOM', null);
-                })
+        //                 removeCanvasesById('container2');
+        //                 var pageNumbers = getPageNumbersById('container2');
+        // // 
+        //                 pageNumbers.map(async (pagenumber) => {
+        //                         const { scaleFactor, requiredWidth } = calulateScaleAndSet(largePage, 8)
+        //                         let response = await renderPage(pagenumber, null, 'ZOOM', null, requiredWidth);
+        //                 })
 
-        }, [scale])
+
         const [numberOfColumns, setNumberOfColumns] = useState(8)
         useEffect(() => {
                 setNumberOfColumns(getNumberOfColumns(1))
@@ -391,6 +447,44 @@ const FileSplit = ({ iniitalLoadPage = 60 }) => {
                                 }}
                         >
                                 {numPages ? null : <p>Loading document...</p>}
+                                {pagesData.map(({ pageNumber, element }) => (
+                                        <div
+                                                key={`${pdfPageNumber}${pageNumber}`}
+                                                style={{
+                                                        position: 'relative',
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                }}
+                                                id={`${pdfPageNumber}${pageNumber}`}
+                                                ref={node => node && node.appendChild(element)}
+                                        >
+                                                                                                <input
+                                                        type="checkbox"
+                                                        id={`myCheckbox_${pageNumber}`}
+                                                        name="myCheckbox"
+                                                        style={{
+                                                                position: 'absolute',
+                                                                left: '0',
+                                                                bottom: '0',
+                                                        }}
+                                                />
+                                                <div
+                                                        style={{
+                                                                display: 'flex',
+                                                                justifyContent: 'center',
+                                                                alignItems: 'center',
+                                                                height: `${requiredWidth}px`,
+                                                        }}
+                                                        id={`${grandParentDataAtribute}${pageNumber}`}
+                                                >
+                                                        {/* Additional content can be added here */}
+                                                </div>
+                                        </div>
+                                ))}
+
+
+
+
                         </div>
                 </div>
         )
