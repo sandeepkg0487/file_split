@@ -34,6 +34,7 @@ const FileSplit = () => {
 
 
         const createCanvas = (pageNum, rotation = 0, scaleFactor, pdfsample = pdf) => {
+                console.log(pageNum,"****")
                 return pdfsample.getPage(parseInt(pageNum)).then(page => {
                         let viewport;
 
@@ -48,7 +49,7 @@ const FileSplit = () => {
                         } else {
                                 viewport = page.getViewport({
                                         scale: scaleFactor,
-                                        rotation
+                                        // rotation
                                 });
                         }
 
@@ -67,13 +68,15 @@ const FileSplit = () => {
                                 return { success: true, pageNumber: pageNum, element: canvas };
                         });
                 }).catch(error => {
-                        console.error('Error getting page:', error);
+                        console.error('Error getting page:',  pageNum,error);
                         return { success: false, pageNumber: pageNum, error };
                 });
         };
 
         const renderPage = (STATUS, pagesData, requiredWidth ,i  ) => {
-                console.log(i,STATUS,pagesData)
+
+
+                console.log(STATUS, pagesData, requiredWidth ,i)
                 if (STATUS == "ZOOM") {
                         pagesData.map(({ pageNumber, element: canvas }) => {
                                 const parentofCanvas = document.getElementById(grandParentDataAtribute + pageNumber)
@@ -81,7 +84,7 @@ const FileSplit = () => {
                                 document.getElementById(grandParentDataAtribute + pageNumber).style.height = `${requiredWidth}px`
                         })
 
-                } else if (STATUS == 'INIT' || STATUS === "MovingDown") {
+                } else if (STATUS == 'INIT' ) {
                         if (pagesData.length > 0)
                                 pagesData.map(({ pageNumber, element: canvas }) => {
 
@@ -124,50 +127,7 @@ const FileSplit = () => {
 
 
                 }
-                else if (STATUS === "MovingUp") {
-
-                        for (let i = pagesData.length - 1; i >= 0; i--) {
-                                const pageContainer = document.createElement("div");
-                                pageContainer.style.position = "relative";
-                                pageContainer.style.display = "flex";
-                                pageContainer.style.justifyContent = "center";
-                                pageContainer.id = pdfPageNumber + pagesData[i].pageNumber;
-
-                                const h1 = document.createElement('h1')
-                                h1.innerHTML = pagesData[i].pageNumber
-                                h1.style.position = 'absolute'
-                                pageContainer.appendChild(h1)
-
-                                const checkbox = document.createElement('input');
-                                checkbox.type = 'checkbox';
-                                checkbox.id = 'myCheckbox_' + pagesData[i].pageNumber.pageNumber;
-                                checkbox.name = 'myCheckbox';
-                                checkbox.style.position = 'absolute';
-                                checkbox.style.left = '0';
-                                checkbox.style.bottom = '0';
-
-
-                                pageContainer.appendChild(pagesData[i].element); //canvas
-                                pageContainer.appendChild(checkbox)
-
-                                const grandParent = document.createElement("div");
-                                grandParent.style.display = `flex`;
-                                grandParent.style.justifyContent = "center";
-                                grandParent.style.alignItems = "center";
-
-                                grandParent.style.height = `${requiredWidth}px`;
-                                grandParent.id = grandParentDataAtribute + pagesData[i].pageNumber;
-                                pageContainer.id = pdfPageNumber + pagesData[i].pageNumber;
-
-                                grandParent.setAttribute(grandParentDataAtribute, pagesData[i].pageNumber);
-                                grandParent.appendChild(pageContainer);
-                                const parentElement = document.getElementById('container2')
-                                parentElement.insertBefore(grandParent, parentElement.firstChild)
-
-                        }
-
-
-                } else if (STATUS === "ABCD") {
+                else if (STATUS === "ABCD") {
                         const pageContainer = document.createElement("div");
                         pageContainer.style.position = "relative";
                         pageContainer.style.display = "flex";
@@ -224,25 +184,6 @@ const FileSplit = () => {
                 })
                 return Promise.all(pagePromises);
         };
-        const appendChildElement = (element, pageNum, wherToAppend) => {
-                if (containerRefSecond.current && !document.getElementById("secondPdf_" + String(pageNum))) {
-                        try {
-                                if (wherToAppend === "START") {
-                                        containerRefSecond.current.insertBefore(element, containerRefSecond.current.firstChild);
-                                } else if (wherToAppend === "END") {
-
-                                        containerRefSecond.current.appendChild(element);
-                                }
-                        } catch (err) {
-
-                        }
-                }
-        };
-        const handleRotate = (PAGE_NUM, POSITION) => {
-
-
-
-        }
         const handleCheckboxClick = (event) => {
                 setCheckbox()
 
@@ -437,24 +378,6 @@ const FileSplit = () => {
                 })
 
         }
-        // function getPageNumbersById(containerId) {
-        //         var container = document.getElementById(containerId);
-        //         var pageNumbers = [];
-        //         if (container) {
-        //                 var elements = container.querySelectorAll(`[data-page-number]`);
-        //                 elements.forEach(function (element) {
-        //                         var num = parseInt(element.getAttribute('data-page-number'), 10);
-        //                         if (!isNaN(num)) {
-        //                                 pageNumbers.push(num);
-        //                         }
-        //                 });
-        //         } else {
-        //                 console.warn('Container with ID "' + containerId + '" not found.');
-        //         }
-
-        //         return pageNumbers;
-        // }
-        // const [custome, setCustome] = useState(false)
 
         useEffect(() => {
                 window.addEventListener('wheel', handleWheel, { passive: false });
@@ -466,16 +389,6 @@ const FileSplit = () => {
                                 containerRefSecond.current.addEventListener('click', handleCheckboxClick);
                 };
         }, [scroll, pdf, largePage])
-
-
-        //                 removeCanvasesById('container2');
-        //                 var pageNumbers = getPageNumbersById('container2');
-        // // 
-        //                 pageNumbers.map(async (pagenumber) => {
-        //                         const { scaleFactor, requiredWidth } = calulateScaleAndSet(largePage, 8)
-        //                         let response = await renderPage(pagenumber, null, 'ZOOM', null, requiredWidth);
-        //                 })
-
 
         const [numberOfColumns, setNumberOfColumns] = useState(8)
         useEffect(() => {
@@ -513,74 +426,26 @@ const FileSplit = () => {
                 const scrollPosition = e.target.scrollTop;
                 console.log(scrollPosition, "scrollPosition ");
 
-                // Update removedRow and removedRowprev correctly
                 setremovedRowprev((prev) => {
                         const newRemovedRow = Number((scrollPosition / requiredWidth).toString().split(".")[0]);
                         setRemovedRow(newRemovedRow);
-                        return removedRow; // Preserve the previous value if necessary
+                        return removedRow;
                 });
 
-                // Clear previous timeout if it exists
                 if (timeoutRef.current) {
                         clearTimeout(timeoutRef.current);
                 }
-
-                // Increment counter
                 setCount((prevCount) => prevCount + 1);
 
-                // Set new timeout
                 timeoutRef.current = setTimeout(() => {
-                        // Check if count exceeds 3
                         if (count > 3) {
                                 console.log('Count exceeded 3');
-                                // Handle the scenario where count exceeds 3 if needed
                         }
-                        // Reset count
                         setCount(0);
-                        // Call the change function
-                        // change();
+                        
                 }, 300);
         };
-        const change = async () => {
-                if (removedRow > 0 && removedRow !== removedRowprev) {
-                        const totalColumn = numPages % numberOfColumns ? Number((numPages / numberOfColumns).toString().split(".")[0]) + 1 : (numPages / numberOfColumns)
-                        const removeUntil = totalColumn - pagesPerScreen + 4
-
-                        if (removedRowprev > removedRow && removedRow >= 3 + 1 && removedRow <= totalColumn - (3 + 4)) { //moving  up
-                                console.log('scroling up')
-                                let startPage = Math.max(((removedRow - 3 - 1) * numberOfColumns) + 1, 1)
-                                let endPage = ((startPage + numberOfColumns) - 1)
-                                let data = await createAllCanvases(startPage, endPage, scale)
-
-
-                                document.getElementById('container2').style.top = `${requiredWidth * (removedRow - 3 - 1)}px`
-                                const removeStart = ((+4 + 3 + removedRow - 1) * numberOfColumns) + 1
-                                for (let i = removeStart; i <= removeStart + numberOfColumns; i++) {
-                                        removeDivById(grandParentDataAtribute + i);
-                                }
-                                renderPage("MovingUp", data, requiredWidth)
-
-
-                        } else if (removedRowprev < removedRow && removedRow > 3) {
-                                console.log('scroling down ')
-
-                                if (removedRow < removeUntil) {
-                                        //prevent page range is grater than the total pages 
-                                        let startPage = (numberOfColumns * pagesPerScreen) + (numberOfColumns * (removedRow - 3 - 1)) + 1
-                                        let endPage = Math.min(startPage + numberOfColumns - 1, numPages)
-                                        let data = await createAllCanvases(startPage, endPage, scale)
-
-                                        document.getElementById('container2').style.top = `${requiredWidth * (removedRow - 3)}px`
-                                        const removeFrom = numberOfColumns * (removedRow - 3)
-                                        for (let i = removeFrom; i > removeFrom - numberOfColumns; i--) {
-                                                removeDivById(grandParentDataAtribute + i);
-                                        }
-                                        renderPage("MovingDown", data, requiredWidth)
-                                }
-                        }
-
-                }
-        }
+        
 
         useEffect(() => {
                 const changetimeout = setTimeout(() => {
@@ -588,16 +453,27 @@ const FileSplit = () => {
                         var container = document.getElementById('container2');
                         const domativeElement = Array.from(container.childNodes).map(item => (Number(item.id.split('_')[1])))
 
-                        console.log(domativeElement, "@@@", removedRow)
-                        if (0 < removedRow - 3) {
+                         console.log(domativeElement, "@@@", removedRow)
+                        let  start = 0
+                        let end = 0
+                        let top = 0
+                        
+                        if (0 < removedRow - 3)  {
 
-                                let start = (numberOfColumns * (removedRow - 3)) + 1
-                                let end = ((pagesPerScreen * numberOfColumns) + start) - 1
-                                let top = requiredWidth * (removedRow - 3)
-                                console.log(end, start)
-                                console.log("start", start, ",end:", end, ", top:", top);
+                                 start = (numberOfColumns * (removedRow - 3)) + 1
+                                 end = Math.min(((pagesPerScreen * numberOfColumns) + start) - 1 , numPages) 
+                                 top = requiredWidth * (removedRow - 3)
+
+                        }else if(3 >=removedRow){
+                                 start = 1
+                                 end = ((pagesPerScreen * numberOfColumns) + start) - 1
+                                 top = 0
 
 
+
+                        }else {
+                                alert("error")
+                        }
 
                                 ///////////////////////////////////////////////
                                 const domActiveSet = new Set(domativeElement);
@@ -629,7 +505,7 @@ const FileSplit = () => {
                                         outOfRangeNumbers: outOfRangeNumbers.sort((a, b) => a - b),
                                         duplicates: duplicates.sort((a, b) => a - b)
                                 }
-                                console.log(result, "removedRow ", removedRow)
+                                console.log(result)
                                 ///////////////////////////////////////////////////
 
                                 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -666,7 +542,7 @@ const FileSplit = () => {
                                 any()
         
                                 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                        }
+                        
 
                         // change()
                 }, 200)
@@ -678,22 +554,6 @@ return () => {
 
 
 
-
-
-
-// const array = Array.from({ length: 30 }, (_, index) => index);
-
-
-
-
-
-
-
-
-const scrollref = useRef()
-
-
-
 return (
         <div
                 onScroll={handleScroll}
@@ -701,7 +561,7 @@ return (
                         height: "80vh",
                         overflow: "scroll"
                 }}
-                ref={scrollref}
+        
         >
                 <div
                         id="scrollDivSecond"
