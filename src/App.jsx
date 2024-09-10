@@ -9,7 +9,15 @@ function App() {
     <>
       <div className='d-flex p-4  vh-100 w-100' >
         <div style={{ width: "20%", height: "100%" }} className='bg-light  h-100 ' >
-          <h1 id='speed'>100</h1>
+          <h5 >total Page</h5  > <h5  id='totalpage'> 100</h5 >
+          <h5 >remved Page</h5  > <h5  id='removed'> 0</h5 >
+          <h5 >Dom Active page </h5  > <h5  id='dom'> 0</h5 >
+          <h5 > start </h5  > <h5  id='start'> 0</h5 >
+          <h5 > end </h5  > <h5  id='end'> 0</h5 >
+          <h5 > top </h5  > <h5  id='top'> 0</h5 >
+
+
+
         </div>
         <div style={{ width: "80%", }} className='p-2 '>
           <FileSplit />

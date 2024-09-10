@@ -31,13 +31,14 @@ const FileSplit = () => {
         const [selected, setselected] = useState([])
         const [lastChecked, setLastChecked] = useState(null)
 
+        const [loader, setloader] = useState(true)
+
 
         const containerRefSecond = useRef(null);
 
 
 
         const createCanvas = (pageNum, rotation = 0, scaleFactor, pdfsample = pdf) => {
-                console.log(pageNum, "****")
                 return pdfsample.getPage(parseInt(pageNum)).then(page => {
                         let viewport;
 
@@ -79,7 +80,6 @@ const FileSplit = () => {
         const renderPage = (STATUS, pagesData, requiredWidth, i) => {
 
 
-                console.log(STATUS, pagesData, requiredWidth, i)
                 if (STATUS == "ZOOM") {
                         pagesData.map(({ pageNumber, element: canvas }) => {
                                 const parentofCanvas = document.getElementById(grandParentDataAtribute + pageNumber)
@@ -97,9 +97,11 @@ const FileSplit = () => {
                                         pageContainer.style.justifyContent = "center";
                                         pageContainer.id = pdfPageNumber + pageNumber;
 
-                                        const h1 = document.createElement('h1')
+                                        const h1 = document.createElement('p')
+                                        h1.style.color = 'green'
                                         h1.innerHTML = pageNumber
                                         h1.style.position = 'absolute'
+                                        h1.style.top = '-25px'
                                         pageContainer.appendChild(h1)
 
                                         const checkbox = document.createElement('input');
@@ -109,7 +111,7 @@ const FileSplit = () => {
                                         checkbox.style.position = 'absolute';
                                         checkbox.style.left = '0';
                                         checkbox.style.bottom = '0';
-
+                                        checkbox.checked = selected[pageNumber - 1] !== undefined ? selected[pageNumber - 1] : false;
 
                                         pageContainer.appendChild(canvas);
                                         pageContainer.appendChild(checkbox)
@@ -137,9 +139,11 @@ const FileSplit = () => {
                         pageContainer.style.justifyContent = "center";
                         pageContainer.id = pdfPageNumber + pagesData[i].pageNumber;
 
-                        const h1 = document.createElement('h1')
+                        const h1 = document.createElement('p')
                         h1.innerHTML = pagesData[i].pageNumber
+                        h1.style.color = 'green'
                         h1.style.position = 'absolute'
+                        h1.style.top = '-25px'
                         pageContainer.appendChild(h1)
 
                         const checkbox = document.createElement('input');
@@ -149,6 +153,7 @@ const FileSplit = () => {
                         checkbox.style.position = 'absolute';
                         checkbox.style.left = '0';
                         checkbox.style.bottom = '0';
+                        checkbox.checked = selected[Number(pagesData[i].pageNumber - 1)] !== undefined ? selected[Number(pagesData[i].pageNumber - 1)] : false;
 
 
                         pageContainer.appendChild(pagesData[i].element); //canvas
@@ -193,26 +198,27 @@ const FileSplit = () => {
 
 
         };
+        
 
         const calulateScaleAndSet = async (result, NUM_COLUMN, FROM = 'init', pdf) => {
+
 
                 const newBigWidthOrHeight = result.width > result.height ? result.width : result.height
                 const containerWidth = (((window.innerWidth - 48) / 100) * 80) - 16
                 let scaleFactor = 0
-
                 let requiredWidth = Number((containerWidth - (10 * (NUM_COLUMN - 1)) - 24) / NUM_COLUMN);
                 setRequiredWidth(requiredWidth)
                 scaleFactor = requiredWidth / newBigWidthOrHeight;
                 setScale(scaleFactor)
                 if (FROM == 'HandleWheel') {
+                        const scrollPosition = document.getElementById('scrollDiv').scrollTop
+                        let numRow = Math.trunc(scrollPosition / (requiredWidth + 50))
+                        numRow = numRow - 3 > 0 ? numRow : 1
+                        const start = ((numRow - 3) * numberOfColumns) + 1
+                        const end = (numRow + 3 + 4) * numberOfColumns
                         // remove all pages from dom and replace the page 
+                        setRemovedRow(numRow)
 
-                        removeCanvasesById('container2').then(async (page) => {
-
-                                let data = await createAllCanvases(1, pagesPerScreen * NUM_COLUMN, scaleFactor)
-                                setPagesData(data)
-                                renderPage("ZOOM", data, requiredWidth)
-                        })
 
 
 
@@ -229,6 +235,7 @@ const FileSplit = () => {
                                 const loadedPdf = await loadingTask.promise;
                                 setPdf(loadedPdf);
                                 setNumPages(loadedPdf.numPages);
+                                document.getElementById('totalpage').innerHTML = loadedPdf.numPages
 
                         } catch (error) {
                                 console.error("error on loading URl:", error)
@@ -237,6 +244,9 @@ const FileSplit = () => {
 
 
                 loadDocument();
+                var scrollDiv = document.getElementById('scrollDiv');
+                if (scrollDiv)
+                        scrollDiv.scrollTop = 0;
         }, []);
 
 
@@ -300,7 +310,6 @@ const FileSplit = () => {
                                         });
                                 }
                         }
-                        console.log(result)
                         setLargePage(result);
 
                         const { scaleFactor, requiredWidth } = await calulateScaleAndSet(result, 8, "init")
@@ -319,6 +328,7 @@ const FileSplit = () => {
                 };
 
                 renderStart();
+                setloader(false)
         }, [pdf, numPages]);
 
         const [scroll, setScroll] = useState(1);
@@ -428,10 +438,9 @@ const FileSplit = () => {
                 e.preventDefault();
 
                 const scrollPosition = e.target.scrollTop;
-                console.log(scrollPosition, "scrollPosition ");
 
                 setremovedRowprev((prev) => {
-                        const newRemovedRow = Number((scrollPosition / requiredWidth).toString().split(".")[0]);
+                        const newRemovedRow = (Number((scrollPosition / (requiredWidth + 50)).toString().split(".")[0]))
                         setRemovedRow(newRemovedRow);
                         return removedRow;
                 });
@@ -443,17 +452,29 @@ const FileSplit = () => {
 
                 timeoutRef.current = setTimeout(() => {
                         if (count > 3) {
-                                console.log('Count exceeded 3');
                         }
                         setCount(0);
 
                 }, 300);
         };
+        useEffect(() => {
+                const removelement = Array.from(document.getElementById('container2').childNodes)
+                console.log(removelement)
+                removelement.map(item => {
+                        removeDivById(item.id)
+                })
 
+        }, [numberOfColumns])
+
+
+
+
+        
 
         useEffect(() => {
                 const changetimeout = setTimeout(() => {
-                        console.log("change called for ", removedRow)
+                        console.log('@@@@@@@@@@@@@@@@@', removedRow, numberOfColumns)
+
                         var container = document.getElementById('container2');
                         const domativeElement = Array.from(container.childNodes).map(item => (Number(item.id.split('_')[1])))
 
@@ -466,7 +487,7 @@ const FileSplit = () => {
 
                                 start = (numberOfColumns * (removedRow - 3)) + 1
                                 end = Math.min(((pagesPerScreen * numberOfColumns) + start) - 1, numPages)
-                                top = requiredWidth * (removedRow - 3)
+                                top = (requiredWidth * ((removedRow - 3))) + ((removedRow - 3) * 50)
 
                         } else if (3 >= removedRow) {
                                 start = 1
@@ -509,7 +530,7 @@ const FileSplit = () => {
                                 outOfRangeNumbers: outOfRangeNumbers.sort((a, b) => a - b),
                                 duplicates: duplicates.sort((a, b) => a - b)
                         }
-                        console.log(result)
+                        console.log(result, "@@@")
                         ///////////////////////////////////////////////////
 
                         //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -519,7 +540,7 @@ const FileSplit = () => {
 
 
                         const any = async () => {
-
+                                console.log('checkpoint')
                                 let data = await createAllCanvasesFORme(missingNumbers, scale)
                                 missingNumbers.forEach((number, index) => {
                                         if (number === start) {
@@ -535,9 +556,11 @@ const FileSplit = () => {
 
                                                         adjust.insertAdjacentElement("afterend", newElement)
                                                 } else {
-                                                        alert("node not found")
-                                                }
+                                                        console.log(number - 1)
+                                                        alert("node not found" + String(number - 1))
+                                                        return true;
 
+                                                }
                                         }
                                 })
 
@@ -546,15 +569,29 @@ const FileSplit = () => {
                         any()
 
                         //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+                        document.getElementById('removed').innerHTML = removedRow
+                        document.getElementById('start').innerHTML = ((removedRow - 3) * numberOfColumns) + 1
+                        document.getElementById('end').innerHTML = (removedRow + 3 + 4) * numberOfColumns
+                        document.getElementById('dom').innerHTML = document.getElementById('container2').firstChild.id.split('_')[1] + ' - ' + document.getElementById('container2').lastChild.id.split('_')[1]
+                        document.getElementById('top').innerHTML = document.getElementById("container2").style.top
 
                         // change()
                 }, 200)
+                try {
+
+
+                } catch (error) {
+                        console.log(error)
+                }
+
+
+                console.log(selected)
+
                 return () => {
                         clearTimeout(changetimeout)
                 }
 
-        }, [removedRow])
+        }, [removedRow, numberOfColumns])
 
 
 
@@ -562,11 +599,9 @@ const FileSplit = () => {
 
         useEffect(() => {
                 setselected(Array.from({ length: numPages }).fill(false))
-                console.log("aaa", Array.from({ length: numPages }).fill(false))
 
         }, [numPages])
         function handleSelectCheckbox(selected) {
-                console.log("selected$$$$", selected)
                 selected.forEach((state, index) => {
                         const checkbox = document.getElementById("myCheckbox_" + index.toString());
                         if (checkbox) {
@@ -584,14 +619,14 @@ const FileSplit = () => {
         }, [])
         let lastcheckedTemp = null
 
-        async function handleCheckbox  (event) {
+        async function handleCheckbox(event) {
 
 
 
                 if (event.target.type === 'checkbox') {
                         const currentChecked = event.target.id;
-                        console.log(lastcheckedTemp, "@@@")
-                         await setLastChecked(prev => {
+
+                        await setLastChecked(prev => {
                                 console.log('$$$ ', prev)
                                 lastcheckedTemp = prev
                                 return prev
@@ -599,7 +634,6 @@ const FileSplit = () => {
                         let checkboxes = []
                         await setselected(prev => {
                                 checkboxes = prev
-                                console.log('$$$ $$$ ', prev)
                                 return prev
                         })
                         if (event.shiftKey && lastcheckedTemp !== null) {
@@ -610,17 +644,16 @@ const FileSplit = () => {
                                 const end = Number(currentChecked.split('_')[1]);
                                 lastcheckedTemp = (null)
                                 setLastChecked(null)
-                                console.log(start, end, "@@@")
                                 // Select all checkboxes between the last checked and the current one
-                                debugger
                                 for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
-                                        if ((i == Math.min(start, end) && start<end  ) || (i == Math.max(start, end) && start>end  )) {
+                                        if ((i == Math.min(start, end) && start < end) || (i == Math.max(start, end) && start > end)) {
                                                 checkboxes[i] = checkboxes[i];
                                         }
-                                        else  {
+                                        else {
                                                 checkboxes[i] = !checkboxes[i];
                                         }
                                 }
+                                console.log("%%%",checkboxes,start,end)
                                 handleSelectCheckbox(checkboxes)
                                 setselected(checkboxes)
                         } else {
@@ -633,7 +666,6 @@ const FileSplit = () => {
                                 }
                                 setLastChecked(lastcheckedTemp)
                                 let index = Number(currentChecked.split('_')[1]);
-                                console.log("$$$ $$$ $$$", checkboxes)
                                 checkboxes[index] = event.target.checked;
                                 setselected(checkboxes)
                         }
@@ -652,18 +684,19 @@ const FileSplit = () => {
                                 height: "93vh",
                                 overflow: "scroll"
                         }}
+                        id='scrollDiv'
 
                 >
                         <div
-                                id="scrollDivSecond"
+
 
                                 style={{
-                                        height: "calc(100vh - 72px)",
+
                                         display: "flex",
                                         justifyContent: "center",
                                         overflow: "none",
                                         backgroundColor: 'aliceblue',
-                                        height: `${(numPages % numberOfColumns ? Number((numPages / numberOfColumns).toString().split(".")[0]) + 1 : (numPages / numberOfColumns)) * requiredWidth}px`,
+                                        height: `${numPages % numberOfColumns ? (Number((numPages / numberOfColumns).toString().split(".")[0]) + 1) * (requiredWidth + 50) : (numPages / numberOfColumns) * (requiredWidth + 50)}px`,
                                         position: "relative",
 
                                 }}>
@@ -674,18 +707,20 @@ const FileSplit = () => {
                                         className="container"
                                         style={{
                                                 width: '100%',
+                                                marginTop: "50px",
                                                 // transform: `scale(${scale+1})`,
                                                 transformOrigin: 'center',
                                                 transition: 'transform 0.1s ease-out',
                                                 display: 'grid',
                                                 gridTemplateColumns: `repeat(${numberOfColumns}, 1fr)`,
-                                                gap: '10px',
+                                                gap: '50px 10px',
                                                 height: 'fit-content',
                                                 position: "absolute",
+                                                top: "0",
 
                                         }}
                                 >
-                                        {numPages ? null : <p>Loading document...</p>}
+                                        {loader  && <p>Loading document...</p>}
 
 
 
