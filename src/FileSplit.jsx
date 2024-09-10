@@ -28,13 +28,16 @@ const FileSplit = () => {
         const [removedRow, setRemovedRow] = useState(0)
         const [removedRowprev, setremovedRowprev] = useState(0)
 
+        const [selected, setselected] = useState([])
+        const [lastChecked, setLastChecked] = useState(null)
+
 
         const containerRefSecond = useRef(null);
 
 
 
         const createCanvas = (pageNum, rotation = 0, scaleFactor, pdfsample = pdf) => {
-                console.log(pageNum,"****")
+                console.log(pageNum, "****")
                 return pdfsample.getPage(parseInt(pageNum)).then(page => {
                         let viewport;
 
@@ -68,15 +71,15 @@ const FileSplit = () => {
                                 return { success: true, pageNumber: pageNum, element: canvas };
                         });
                 }).catch(error => {
-                        console.error('Error getting page:',  pageNum,error);
+                        console.error('Error getting page:', pageNum, error);
                         return { success: false, pageNumber: pageNum, error };
                 });
         };
 
-        const renderPage = (STATUS, pagesData, requiredWidth ,i  ) => {
+        const renderPage = (STATUS, pagesData, requiredWidth, i) => {
 
 
-                console.log(STATUS, pagesData, requiredWidth ,i)
+                console.log(STATUS, pagesData, requiredWidth, i)
                 if (STATUS == "ZOOM") {
                         pagesData.map(({ pageNumber, element: canvas }) => {
                                 const parentofCanvas = document.getElementById(grandParentDataAtribute + pageNumber)
@@ -84,7 +87,7 @@ const FileSplit = () => {
                                 document.getElementById(grandParentDataAtribute + pageNumber).style.height = `${requiredWidth}px`
                         })
 
-                } else if (STATUS == 'INIT' ) {
+                } else if (STATUS == 'INIT') {
                         if (pagesData.length > 0)
                                 pagesData.map(({ pageNumber, element: canvas }) => {
 
@@ -101,7 +104,7 @@ const FileSplit = () => {
 
                                         const checkbox = document.createElement('input');
                                         checkbox.type = 'checkbox';
-                                        checkbox.id = 'myCheckbox_' + pageNumber;
+                                        checkbox.id = 'myCheckbox_' + (Number(pageNumber) - 1);
                                         checkbox.name = 'myCheckbox';
                                         checkbox.style.position = 'absolute';
                                         checkbox.style.left = '0';
@@ -141,7 +144,7 @@ const FileSplit = () => {
 
                         const checkbox = document.createElement('input');
                         checkbox.type = 'checkbox';
-                        checkbox.id = 'myCheckbox_' + pagesData[i].pageNumber.pageNumber;
+                        checkbox.id = 'myCheckbox_' + Number(pagesData[i].pageNumber - 1);
                         checkbox.name = 'myCheckbox';
                         checkbox.style.position = 'absolute';
                         checkbox.style.left = '0';
@@ -179,7 +182,7 @@ const FileSplit = () => {
         };
         const createAllCanvasesFORme = async (array, scaleFactor) => {
                 const pagePromises = [];
-                array.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  map(item=>{
+                array.map(item => {
                         pagePromises.push(createCanvas(item, null, scaleFactor));
                 })
                 return Promise.all(pagePromises);
@@ -226,6 +229,7 @@ const FileSplit = () => {
                                 const loadedPdf = await loadingTask.promise;
                                 setPdf(loadedPdf);
                                 setNumPages(loadedPdf.numPages);
+
                         } catch (error) {
                                 console.error("error on loading URl:", error)
                         }
@@ -442,10 +446,10 @@ const FileSplit = () => {
                                 console.log('Count exceeded 3');
                         }
                         setCount(0);
-                        
+
                 }, 300);
         };
-        
+
 
         useEffect(() => {
                 const changetimeout = setTimeout(() => {
@@ -453,157 +457,244 @@ const FileSplit = () => {
                         var container = document.getElementById('container2');
                         const domativeElement = Array.from(container.childNodes).map(item => (Number(item.id.split('_')[1])))
 
-                         console.log(domativeElement, "@@@", removedRow)
-                        let  start = 0
+                        console.log(domativeElement, "@@@", removedRow)
+                        let start = 0
                         let end = 0
                         let top = 0
-                        
-                        if (0 < removedRow - 3)  {
 
-                                 start = (numberOfColumns * (removedRow - 3)) + 1
-                                 end = Math.min(((pagesPerScreen * numberOfColumns) + start) - 1 , numPages) 
-                                 top = requiredWidth * (removedRow - 3)
+                        if (0 < removedRow - 3) {
 
-                        }else if(3 >=removedRow){
-                                 start = 1
-                                 end = ((pagesPerScreen * numberOfColumns) + start) - 1
-                                 top = 0
+                                start = (numberOfColumns * (removedRow - 3)) + 1
+                                end = Math.min(((pagesPerScreen * numberOfColumns) + start) - 1, numPages)
+                                top = requiredWidth * (removedRow - 3)
+
+                        } else if (3 >= removedRow) {
+                                start = 1
+                                end = ((pagesPerScreen * numberOfColumns) + start) - 1
+                                top = 0
 
 
 
-                        }else {
+                        } else {
                                 alert("error")
                         }
 
-                                ///////////////////////////////////////////////
-                                const domActiveSet = new Set(domativeElement);
+                        ///////////////////////////////////////////////
+                        const domActiveSet = new Set(domativeElement);
 
-                                // Create a set of all numbers in the range [start, end]
-                                const fullRangeSet = new Set();
-                                for (let i = start; i <= end; i++) {
-                                        fullRangeSet.add(i);
-                                }
+                        // Create a set of all numbers in the range [start, end]
+                        const fullRangeSet = new Set();
+                        for (let i = start; i <= end; i++) {
+                                fullRangeSet.add(i);
+                        }
 
-                                // Find missing numbers in the range
-                                const missingNumbers = [...fullRangeSet].filter(num => !domActiveSet.has(num));
+                        // Find missing numbers in the range
+                        const missingNumbers = [...fullRangeSet].filter(num => !domActiveSet.has(num));
 
-                                // Find numbers in domativeElement that are not in the range
-                                const outOfRangeNumbers = [...domActiveSet].filter(num => num < start || num > end);
+                        // Find numbers in domativeElement that are not in the range
+                        const outOfRangeNumbers = [...domActiveSet].filter(num => num < start || num > end);
 
-                                // Find duplicates in the domativeElement
-                                const countMap = domativeElement.reduce((acc, num) => {
-                                        acc[num] = (acc[num] || 0) + 1;
-                                        return acc;
-                                }, {});
+                        // Find duplicates in the domativeElement
+                        const countMap = domativeElement.reduce((acc, num) => {
+                                acc[num] = (acc[num] || 0) + 1;
+                                return acc;
+                        }, {});
 
-                                const duplicates = Object.keys(countMap)
-                                        .filter(key => countMap[key] > 1)
-                                        .map(Number);
+                        const duplicates = Object.keys(countMap)
+                                .filter(key => countMap[key] > 1)
+                                .map(Number);
 
-                                const result = {
-                                        missingNumbers: missingNumbers.sort((a, b) => a - b),
-                                        outOfRangeNumbers: outOfRangeNumbers.sort((a, b) => a - b),
-                                        duplicates: duplicates.sort((a, b) => a - b)
-                                }
-                                console.log(result)
-                                ///////////////////////////////////////////////////
+                        const result = {
+                                missingNumbers: missingNumbers.sort((a, b) => a - b),
+                                outOfRangeNumbers: outOfRangeNumbers.sort((a, b) => a - b),
+                                duplicates: duplicates.sort((a, b) => a - b)
+                        }
+                        console.log(result)
+                        ///////////////////////////////////////////////////
 
-                                //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                                duplicates.map(item => removeDivById(grandParentDataAtribute + item))
-                                outOfRangeNumbers.map(item => removeDivById(grandParentDataAtribute + item))
-                                document.getElementById('container2').style.top = `${top}px`
+                        //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                        duplicates.map(item => removeDivById(grandParentDataAtribute + item))
+                        outOfRangeNumbers.map(item => removeDivById(grandParentDataAtribute + item))
+                        document.getElementById('container2').style.top = `${top}px`
 
 
-                                const any = async () => {
+                        const any = async () => {
 
-                                        let data = await createAllCanvasesFORme(missingNumbers  , scale)
-                                        missingNumbers.forEach((number,index) => {
-                                                if (number === start) {
-                                                        const grandParent = renderPage("ABCD", data, requiredWidth ,index)
-                                                        const parentElement = document.getElementById('container2')
-                                                        parentElement.insertBefore(grandParent, parentElement.firstChild)
-                                                        parentElement.insertAfter
+                                let data = await createAllCanvasesFORme(missingNumbers, scale)
+                                missingNumbers.forEach((number, index) => {
+                                        if (number === start) {
+                                                const grandParent = renderPage("ABCD", data, requiredWidth, index)
+                                                const parentElement = document.getElementById('container2')
+                                                parentElement.insertBefore(grandParent, parentElement.firstChild)
+                                                parentElement.insertAfter
 
+                                        } else {
+                                                const newElement = renderPage("ABCD", data, requiredWidth, index)
+                                                const adjust = document.getElementById(grandParentDataAtribute + (number - 1))
+                                                if (adjust) {
+
+                                                        adjust.insertAdjacentElement("afterend", newElement)
                                                 } else {
-                                                        const newElement = renderPage("ABCD", data, requiredWidth, index)
-                                                        const adjust = document.getElementById(grandParentDataAtribute + (number - 1))
-                                                        if (adjust) {
-
-                                                                adjust.insertAdjacentElement("afterend", newElement)
-                                                        } else {
-                                                                alert("node not found")
-                                                        }
-
+                                                        alert("node not found")
                                                 }
-                                        })
 
-                                        
-                                }
-                                any()
-        
-                                //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                        
+                                        }
+                                })
+
+
+                        }
+                        any()
+
+                        //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 
                         // change()
                 }, 200)
-return () => {
-        clearTimeout(changetimeout)
-}
+                return () => {
+                        clearTimeout(changetimeout)
+                }
 
         }, [removedRow])
 
 
 
-return (
-        <div
-                onScroll={handleScroll}
-                style={{
-                        height: "80vh",
-                        overflow: "scroll"
-                }}
-        
-        >
+        ////////////////////////////////////////////////////////
+
+        useEffect(() => {
+                setselected(Array.from({ length: numPages }).fill(false))
+                console.log("aaa", Array.from({ length: numPages }).fill(false))
+
+        }, [numPages])
+        function handleSelectCheckbox(selected) {
+                console.log("selected$$$$", selected)
+                selected.forEach((state, index) => {
+                        const checkbox = document.getElementById("myCheckbox_" + index.toString());
+                        if (checkbox) {
+                                checkbox.checked = state;
+                        }
+                });
+        }
+        useEffect(() => {
+                const checkboxContainer = document.getElementById('container2')
+                checkboxContainer.addEventListener('click', handleCheckbox)
+
+                return () => {
+                        checkboxContainer.removeEventListener('wheel', handleWheel)
+                }
+        }, [])
+        let lastcheckedTemp = null
+
+        async function handleCheckbox  (event) {
+
+
+
+                if (event.target.type === 'checkbox') {
+                        const currentChecked = event.target.id;
+                        console.log(lastcheckedTemp, "@@@")
+                         await setLastChecked(prev => {
+                                console.log('$$$ ', prev)
+                                lastcheckedTemp = prev
+                                return prev
+                        })
+                        let checkboxes = []
+                        await setselected(prev => {
+                                checkboxes = prev
+                                console.log('$$$ $$$ ', prev)
+                                return prev
+                        })
+                        if (event.shiftKey && lastcheckedTemp !== null) {
+                                // Get the indices of the checkboxes
+
+
+                                const start = lastcheckedTemp
+                                const end = Number(currentChecked.split('_')[1]);
+                                lastcheckedTemp = (null)
+                                setLastChecked(null)
+                                console.log(start, end, "@@@")
+                                // Select all checkboxes between the last checked and the current one
+                                debugger
+                                for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+                                        if ((i == Math.min(start, end) && start<end  ) || (i == Math.max(start, end) && start>end  )) {
+                                                checkboxes[i] = checkboxes[i];
+                                        }
+                                        else  {
+                                                checkboxes[i] = !checkboxes[i];
+                                        }
+                                }
+                                handleSelectCheckbox(checkboxes)
+                                setselected(checkboxes)
+                        } else {
+                                if (event.shiftKey) {
+                                        lastcheckedTemp = (Number(currentChecked.split('_')[1]))
+
+                                } else {
+                                        lastcheckedTemp = (null)
+
+                                }
+                                setLastChecked(lastcheckedTemp)
+                                let index = Number(currentChecked.split('_')[1]);
+                                console.log("$$$ $$$ $$$", checkboxes)
+                                checkboxes[index] = event.target.checked;
+                                setselected(checkboxes)
+                        }
+
+
+                }
+        }
+        ////////////////////////////////////////////////////////
+
+
+
+        return (
                 <div
-                        id="scrollDivSecond"
-
+                        onScroll={handleScroll}
                         style={{
-                                height: "calc(100vh - 72px)",
-                                display: "flex",
-                                justifyContent: "center",
-                                overflow: "none",
-                                backgroundColor: 'aliceblue',
-                                height: `${(numPages % numberOfColumns ? Number((numPages / numberOfColumns).toString().split(".")[0]) + 1 : (numPages / numberOfColumns)) * requiredWidth}px`,
-                                position: "relative",
+                                height: "93vh",
+                                overflow: "scroll"
+                        }}
 
-                        }}>
-
+                >
                         <div
-                                ref={containerRefSecond}
-                                id="container2"
-                                className="container"
+                                id="scrollDivSecond"
+
                                 style={{
-                                        width: '100%',
-                                        // transform: `scale(${scale+1})`,
-                                        transformOrigin: 'center',
-                                        transition: 'transform 0.1s ease-out',
-                                        display: 'grid',
-                                        gridTemplateColumns: `repeat(${numberOfColumns}, 1fr)`,
-                                        gap: '10px',
-                                        height: 'fit-content',
-                                        position: "absolute",
+                                        height: "calc(100vh - 72px)",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        overflow: "none",
+                                        backgroundColor: 'aliceblue',
+                                        height: `${(numPages % numberOfColumns ? Number((numPages / numberOfColumns).toString().split(".")[0]) + 1 : (numPages / numberOfColumns)) * requiredWidth}px`,
+                                        position: "relative",
 
-                                }}
-                        >
-                                {numPages ? null : <p>Loading document...</p>}
+                                }}>
+
+                                <div
+                                        ref={containerRefSecond}
+                                        id="container2"
+                                        className="container"
+                                        style={{
+                                                width: '100%',
+                                                // transform: `scale(${scale+1})`,
+                                                transformOrigin: 'center',
+                                                transition: 'transform 0.1s ease-out',
+                                                display: 'grid',
+                                                gridTemplateColumns: `repeat(${numberOfColumns}, 1fr)`,
+                                                gap: '10px',
+                                                height: 'fit-content',
+                                                position: "absolute",
+
+                                        }}
+                                >
+                                        {numPages ? null : <p>Loading document...</p>}
 
 
 
 
 
+                                </div>
                         </div>
                 </div>
-        </div>
-)
+        )
 }
 
 export default FileSplit                
