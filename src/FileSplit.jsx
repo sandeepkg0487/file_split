@@ -519,8 +519,9 @@ const FileSplit = ({ dummyData: removedElementArr, block }) => {
                         const any = async () => {
                                 console.log('checkpoint')
 
-                                let data = await createAllCanvasesFORme(removedElementArr, scale)
+                                let data = await createAllCanvasesFORme(missingNumbers, scale)
                                 document.getElementById('container2').style.top = `${top}px`
+                                if(data.length>0)
                                 missingNumbers.forEach((number, index) => {
 
 
