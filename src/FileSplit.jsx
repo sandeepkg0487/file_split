@@ -3,7 +3,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 import { useEffect, useRef, useState } from "react";
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import 'pdfjs-dist/web/pdf_viewer.css';
-import fileUrl from './assets/sample123.pdf'
+import fileUrl from './assets/sample12.pdf'
 import { Alert } from "bootstrap";
 
 // pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
@@ -16,7 +16,7 @@ const canvasId = 'canvasId_'
 
 // const fileUrl = "https://api59.ilovepdf.com/v1/download/k0Ag6vj5t3bx484cnybd0kdAb5f7jd30d6bzq05vkn4s093tk6vtm7pv67wflkt7hdttj0wk0A8rrj12rsy1sgw9xp2bfw784b40c27rjtz1dlApj42lr67sn267gry1yf0hAsxkkyjnpt89sqjcdwcsh3jn7wcphckz3c3rpnglbsrtn4A1";
 
-const FileSplit = ({ dummyData: removedElementArr, editPage, block }) => {
+const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, setSelected }) => {
         const [pagesPerScreen, setPagesperScreen] = useState(10)
         const [pdf, setPdf] = useState(null);
         const [numPages, setNumPages] = useState(null);
@@ -29,7 +29,7 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block }) => {
         const [removedRow, setRemovedRow] = useState(0)
         const [totalPages, setTotalPages] = useState(0)
 
-        const [selected, setSelected] = useState([])
+        // const [selected, setSelected] = useState([])
         const [lastChecked, setLastChecked] = useState(null)
 
         const [loader, setloader] = useState(true)
@@ -37,30 +37,21 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block }) => {
 
         const containerRefSecond = useRef(null);
 
-        console.log(removedElementArr, "removedElementArr 1");
 
 
         const createCanvas = (pageNum, rotation = 0, scaleFactor, pageDetails) => {
+                console.log("$$$$$$44", rotation);
 
                 let viewport;
                 let page = pageDetails.page
                 if (!page) {
                         return
                 }
-                if (rotation === 90 || rotation === 270) {
-                        const originalWidth = pageDetails.width * scale;
-                        const originalHeight = pageDetails.height * scale;
-                        const newScale = (originalWidth / originalHeight) * zoom;
-                        viewport = page.getViewport({
-                                scale: scaleFactor,
-                                rotation
-                        });
-                } else {
-                        viewport = page.getViewport({
-                                scale: scaleFactor,
-                                // rotation
-                        });
-                }
+
+                viewport = page.getViewport({
+                        scale: scaleFactor,
+                        rotation
+                });
 
                 const canvas = document.createElement("canvas");
                 canvas.width = viewport.width;
@@ -79,7 +70,7 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block }) => {
 
         };
 
-        const renderPage = (STATUS, pagesData, requiredWidth,domActiveNumber) => {
+        const renderPage = (STATUS, pagesData, requiredWidth, domActiveNumber) => {
 
 
                 if (STATUS == "ZOOM") {
@@ -92,7 +83,6 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block }) => {
                 } else if (STATUS == 'INIT') {
                         if (pagesData.length > 0)
                                 pagesData.map(({ pageNumber, element: canvas }) => {
-                                        console.log('aaaaaaaaaaaaaaaaaaaaaa')
                                         const pageContainer = document.createElement("div");
                                         pageContainer.style.position = "relative";
                                         pageContainer.style.display = "flex";
@@ -155,7 +145,6 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block }) => {
                         checkbox.style.position = 'absolute';
                         checkbox.style.left = '0';
                         checkbox.style.bottom = '0';
-                        console.log(selected[Number(pagesData.pageNumber - 1)], pagesData.pageNumber - 1, "&&&")
                         checkbox.checked = selected[Number(pagesData.pageNumber - 1)] !== undefined ? selected[Number(pagesData.pageNumber - 1)] : false;
 
 
@@ -192,14 +181,12 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block }) => {
         };
         const createAllCanvasesFORme = async (array, scaleFactor, newPageDetails) => {
                 const pagePromises = [];
-debugger
-                console.log(array, scaleFactor, newPageDetails)
                 if (newPageDetails.length === 0)
                         return
                 if (newPageDetails.length == 0)
                         alert('NEW PAGE dETAILS IS 0')
                 array.map(item => {
-                        pagePromises.push(createCanvas(newPageDetails[item - 1].pageNumber, null, scaleFactor, newPageDetails[item - 1]));
+                        pagePromises.push(createCanvas(newPageDetails[item - 1].pageNumber, newPageDetails[item - 1].rotate, scaleFactor, newPageDetails[item - 1]));
                 })
                 return Promise.all(pagePromises);
         };
@@ -251,12 +238,6 @@ debugger
                 if (scrollDiv)
                         scrollDiv.scrollTop = 0;
 
-
-
-
-
-
-
         }, []);
 
 
@@ -293,6 +274,7 @@ debugger
                                                 rotate: page?._pageInfo.rotate,
                                                 isActive: true,
                                                 page: page,
+                                                _pageIndex: page._pageIndex
                                         };
 
 
@@ -312,7 +294,9 @@ debugger
                                         }
                                         updatedDetails.push(pageDetails)
                                 }
+
                         }
+
                         setPageDetails(updatedDetails);
                         setNewPageDetails(updatedDetails)
                         setLargePage(result);
@@ -333,10 +317,9 @@ debugger
 
                 renderStart();
                 setloader(false)
-                console.log(pdf, "pdf")
         }, [pdf]);
 
-
+        console.log(pageDetails, "###")
         const [scroll, setScroll] = useState(1);
 
         const handleWheel = (e) => {
@@ -446,7 +429,6 @@ debugger
 
                 const newRemovedRow = (Number((scrollPosition / (requiredWidth + 50)).toString().split(".")[0]))
                 if (removedRow != newRemovedRow) {
-                        console.log(removedRow, "hiiiiiii", newRemovedRow)
                         setRemovedRow(newRemovedRow);
                 }
 
@@ -454,7 +436,6 @@ debugger
         };
         useEffect(() => {
                 const removelement = Array.from(document.getElementById('container2').childNodes)
-                console.log(removelement)
                 removelement.map(item => {
                         removeDivById(item.id)
                 })
@@ -463,15 +444,14 @@ debugger
 
         useEffect(() => {
                 const changetimeout = setTimeout(() => {
-                        
+
                         if (newPageDetails.length === 0) {
                                 return true
                         }
                         var container = document.getElementById('container2');
                         // Array.from(container.childNodes).map(item => (Number(item.id.split('_')[1])))
-                        const domativeElement = Array.from(container.childNodes).map(item=>Number(item.dataset.pageNumber_)) 
+                        const domativeElement = Array.from(container.childNodes).map(item => Number(item.dataset.pageNumber_))
 
-                        console.log(domativeElement, "@@@", removedRow)
                         let start = 0
                         let end = 0
                         let top = 0
@@ -486,7 +466,7 @@ debugger
 
                         } else if (3 >= removedRow) {
                                 start = 1
-                                end = Math.min(((pagesPerScreen * numberOfColumns) + start) - 1 ,numPages)
+                                end = Math.min(((pagesPerScreen * numberOfColumns) + start) - 1, numPages)
                                 top = 0
 
 
@@ -524,35 +504,31 @@ debugger
                                 outOfRangeNumbers: outOfRangeNumbers.sort((a, b) => a - b),
                                 duplicates: duplicates.sort((a, b) => a - b)
                         }
-                        console.log(result, "@@@")
                         ///////////////////////////////////////////////////
 
                         //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                        duplicates.map(item => removeDivById(grandParentDataAtribute + item))
-                        outOfRangeNumbers.map(item => removeDivById(grandParentDataAtribute + item))
                         //////////////////////////////////////////////////////////////////////////////////////////////////////
                         const any = async () => {
-                                console.log('checkpoint', missingNumbers)
 
                                 let data = await createAllCanvasesFORme(missingNumbers, scale, newPageDetails)
-                                console.log(data, missingNumbers, "^^^");
 
+                                duplicates.map(item => removeDivById(grandParentDataAtribute + item))
+                                outOfRangeNumbers.map(item => removeDivById(grandParentDataAtribute + item))
                                 document.getElementById('container2').style.top = `${top}px`
                                 if (data.length > 0)
                                         missingNumbers.forEach((number, index) => {
                                                 if (number === start) {
-                                                        const grandParent = renderPage("ABCD", data[index], requiredWidth,number);
+                                                        const grandParent = renderPage("ABCD", data[index], requiredWidth, number);
                                                         const parentElement = document.getElementById('container2');
                                                         parentElement.insertBefore(grandParent, parentElement.firstChild);
                                                 } else {
-                                                        const newElement = renderPage("ABCD", data[index], requiredWidth,number);
+                                                        const newElement = renderPage("ABCD", data[index], requiredWidth, number);
                                                         let newNumber = data[index].pageNumber;
 
                                                         while (newNumber > 0) {
                                                                 const adjust = document.getElementById(grandParentDataAtribute + (newNumber - 1));
 
                                                                 if (adjust) {
-                                                                        console.log(newNumber, newElement, "1111");
                                                                         adjust.insertAdjacentElement("afterend", newElement);
                                                                         return; // Exit the function once the element is found and inserted
                                                                 }
@@ -569,7 +545,7 @@ debugger
                         document.getElementById('removed').innerHTML = removedRow
                         document.getElementById('start').innerHTML = ((removedRow - 3) * numberOfColumns) + 1
                         document.getElementById('end').innerHTML = (removedRow + 3 + 4) * numberOfColumns
-                        document.getElementById('dom').innerHTML = document.getElementById('container2').firstChild.id.split('_')[1] + ' - ' + document.getElementById('container2').lastChild.id.split('_')[1]
+                        document.getElementById('dom').innerHTML = document.getElementById('container2')?.firstChild.id.split('_')[1] + ' - ' + document.getElementById('container2').lastChild.id.split('_')[1]
                         document.getElementById('top').innerHTML = document.getElementById("container2").style.top
 
                         // change()
@@ -582,7 +558,6 @@ debugger
                 }
 
 
-                console.log(selected)
 
                 return () => {
                         clearTimeout(changetimeout)
@@ -598,6 +573,7 @@ debugger
 
 
         }, [totalPages])
+        console.log(selected, "@@@@@@@@@@@@@@")
         function handleSelectCheckbox(selected) {
                 selected.forEach((state, index) => {
                         const checkbox = document.getElementById("myCheckbox_" + index.toString());
@@ -624,7 +600,6 @@ debugger
                         const currentChecked = event.target.id;
 
                         await setLastChecked(prev => {
-                                console.log('$$$ ', prev)
                                 lastcheckedTemp = prev
                                 return prev
                         })
@@ -650,9 +625,7 @@ debugger
                                                 checkboxes[i] = !checkboxes[i];
                                         }
                                 }
-                                console.log("%%%", checkboxes, start, end)
                                 handleSelectCheckbox(checkboxes)
-                                debugger        
                                 setSelected(checkboxes)
                         } else {
                                 if (event.shiftKey) {
@@ -671,14 +644,13 @@ debugger
 
                 }
         }
-        
+
 
 
         ///////////////////   split    /////////////////////
         useEffect(() => {
 
                 let newPageDetails = [...pageDetails]
-                console.log("@@@@@ newPageDetails", newPageDetails)
 
                 if (newPageDetails.length > 0) {
                         removedElementArr.map((item) => {
@@ -688,7 +660,6 @@ debugger
                         setPageDetails(newPageDetails)
                         const updatedArray = newPageDetails.filter((item) => item?.isActive === true);
 
-                        console.log("@@@@@ updatedArray", updatedArray)
 
                         setNewPageDetails(updatedArray)
                         setNumPages(updatedArray.length)
@@ -716,15 +687,15 @@ debugger
                         })
                         setPageDetails(newPageDetails)
                         const updatedArray = newPageDetails.filter((item) => item?.isActive === true);
-                        
+
                         setNewPageDetails(updatedArray)
                         setNumPages(updatedArray.length)
                         setSelected(selectedTemp)
-                        
-                        
+
+
                         Array.from(document.getElementById('container2').childNodes).map(item => item.remove())
                 }
-
+                console.log('%%%%%%%%%%%%%%%%5')
         }, [editPage])
 
 

@@ -8,13 +8,23 @@ const [dummyData, setdummyData] = useState([])
 const [block, setBolock] = useState(false)
 const [editPage, setEditPage] = useState([    ])
 
+const [selected, setSelected] = useState([])
+
 const handleClick =  (e) => { 
-  setdummyData([4,5,6,7,8,9])
+  setdummyData([])
  }
  const handleClick1 =  (e) => { 
-  setEditPage([4,5,6,7,8,9])
+  setEditPage([1,2,3,4,5])
+ }
+ const  handleSplit = () =>{
+  const indices=  selected.map((value, index) => value ? index+1 : -1) // Map true values to their indices, false values to -1
+  .filter(index => index !== -1);
+  console.log(indices)
+    setdummyData(indices)
  }
 
+
+  
  const handleClick2=() => { 
   setBolock(!block)
 
@@ -32,11 +42,20 @@ const handleClick =  (e) => {
         <button onClick={handleClick}>clickme</button>
         <button onClick={handleClick1}>clickme1</button>
         <button onClick={handleClick2}>{block.toString()}</button>
+        <button onClick={handleSplit}> Split </button>
+        
 
 
         </div>
         <div style={{ width: "80%", }} className='p-2 '>
-          <FileSplit dummyData={dummyData} editPage={editPage} />
+          <FileSplit 
+          dummyData={dummyData} 
+          editPage={editPage} 
+          setdummyData={setdummyData}
+          setSelected={setSelected}
+          selected={selected}
+
+          />
         </div>
 
       </div>
