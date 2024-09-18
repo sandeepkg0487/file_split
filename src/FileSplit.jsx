@@ -3,8 +3,10 @@ import "pdfjs-dist/web/pdf_viewer.css";
 import { useEffect, useRef, useState } from "react";
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import 'pdfjs-dist/web/pdf_viewer.css';
-import fileUrl from './assets/sample12.pdf'
+import fileUrl from './assets/sample01.pdf'
 import { Alert } from "bootstrap";
+import { Modal, Button } from 'react-bootstrap';
+
 
 // pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
@@ -12,63 +14,70 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.m
 
 const pdfPageNumber = "secondPdf_"
 const grandParentDataAtribute = "data-page-number_"
-const canvasId = 'canvasId_'
+// const canvasId = 'canvasId_'
 
 // const fileUrl = "https://api59.ilovepdf.com/v1/download/k0Ag6vj5t3bx484cnybd0kdAb5f7jd30d6bzq05vkn4s093tk6vtm7pv67wflkt7hdttj0wk0A8rrj12rsy1sgw9xp2bfw784b40c27rjtz1dlApj42lr67sn267gry1yf0hAsxkkyjnpt89sqjcdwcsh3jn7wcphckz3c3rpnglbsrtn4A1";
 
-const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, setSelected }) => {
+const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, setSelected, pageDetails, setPageDetails, scale, setScale, newPageDetails, setNewPageDetails, createCanvas, setThumbnail, thumbnail }) => {
         const [pagesPerScreen, setPagesperScreen] = useState(10)
         const [pdf, setPdf] = useState(null);
         const [numPages, setNumPages] = useState(null);
-        const [pageDetails, setPageDetails] = useState([]);
-        const [scale, setScale] = useState(0.1);
+        // const [pageDetails, setPageDetails] = useState([]);
+        // const [scale, setScale] = useState(0.1);
         const [largePage, setLargePage] = useState({});
         const [checkBox, setCheckbox] = useState([])
         const [pagesData, setPagesData] = useState([])
         const [requiredWidth, setRequiredWidth] = useState(0)
         const [removedRow, setRemovedRow] = useState(0)
         const [totalPages, setTotalPages] = useState(0)
+        const [createImageSelected, setCreateImageSelected] = useState([])
 
         // const [selected, setSelected] = useState([])
         const [lastChecked, setLastChecked] = useState(null)
 
         const [loader, setloader] = useState(true)
-        const [newPageDetails, setNewPageDetails] = useState([])
+        // const [newPageDetails, setNewPageDetails] = useState([])
 
         const containerRefSecond = useRef(null);
+        //////////////////   modal   ///////////////////////////
+
+        const [showModal, setShowModal] = useState(false);
+        const handleOpen = () => setShowModal(true);
+        const handleClose = () => setShowModal(false)
+        const [viewCnvas, setViewCnvas] = useState()
+        const canvasContainerRef = useRef(null);
+        /////////////////////////////////////
 
 
+        // const createCanvas = (pageNum, rotation = 0, scaleFactor, pageDetails) => {
 
-        const createCanvas = (pageNum, rotation = 0, scaleFactor, pageDetails) => {
-                console.log("$$$$$$44", rotation);
+        //         let viewport;
+        //         let page = pageDetails.page
+        //         if (!page) {
+        //                 return
+        //         }
 
-                let viewport;
-                let page = pageDetails.page
-                if (!page) {
-                        return
-                }
+        //         viewport = page.getViewport({
+        //                 scale: scaleFactor,
+        //                 rotation
+        //         });
 
-                viewport = page.getViewport({
-                        scale: scaleFactor,
-                        rotation
-                });
+        //         const canvas = document.createElement("canvas");
+        //         canvas.width = viewport.width;
+        //         canvas.height = viewport.height;
+        //         canvas.id = canvasId + pageNum;
 
-                const canvas = document.createElement("canvas");
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                canvas.id = canvasId + pageNum;
+        //         const context = canvas.getContext("2d");
+        //         const renderContext = {
+        //                 canvasContext: context,
+        //                 viewport
+        //         };
 
-                const context = canvas.getContext("2d");
-                const renderContext = {
-                        canvasContext: context,
-                        viewport
-                };
+        //         return page.render(renderContext).promise.then(() => {
+        //                 return { success: true, pageNumber: page._pageIndex + 1, element: canvas };
+        //         });
 
-                return page.render(renderContext).promise.then(() => {
-                        return { success: true, pageNumber: page._pageIndex + 1, element: canvas };
-                });
-
-        };
+        // };
 
         const renderPage = (STATUS, pagesData, requiredWidth, domActiveNumber) => {
 
@@ -186,7 +195,7 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
                 if (newPageDetails.length == 0)
                         alert('NEW PAGE dETAILS IS 0')
                 array.map(item => {
-                        pagePromises.push(createCanvas(newPageDetails[item - 1].pageNumber, newPageDetails[item - 1].rotate, scaleFactor, newPageDetails[item - 1]));
+                        pagePromises.push(createCanvas(newPageDetails[item - 1]._pageIndex, newPageDetails[item - 1].rotate, scaleFactor, newPageDetails[item - 1]));
                 })
                 return Promise.all(pagePromises);
         };
@@ -258,6 +267,7 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
                         };
 
                         let updatedDetails = []
+
                         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
                                 let page = null
                                 try {
@@ -293,9 +303,13 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
                                                 };
                                         }
                                         updatedDetails.push(pageDetails)
+
                                 }
 
                         }
+
+
+
 
                         setPageDetails(updatedDetails);
                         setNewPageDetails(updatedDetails)
@@ -319,7 +333,6 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
                 setloader(false)
         }, [pdf]);
 
-        console.log(pageDetails, "###")
         const [scroll, setScroll] = useState(1);
 
         const handleWheel = (e) => {
@@ -372,15 +385,17 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
 
         function removeDivById(grandParentDataAtribute) {
                 return new Promise((res, rej) => {
-                        var container = document.getElementById(grandParentDataAtribute);
-                        if (container) {
-                                container.remove();
+                        const element = document.querySelector(`[data-page-number_="${grandParentDataAtribute}"]`);
+                        // var container = document.getElementById(grandParentDataAtribute);
+                        if (element) {
+                                element.remove();
                         } else {
                                 console.warn('Container with ID "' + grandParentDataAtribute + '" not found.');
                         }
                 })
 
         }
+
 
         useEffect(() => {
                 window.addEventListener('wheel', handleWheel, { passive: false });
@@ -435,9 +450,11 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
 
         };
         useEffect(() => {
-                const removelement = Array.from(document.getElementById('container2').childNodes)
+                // const removelement = Array.from(document.getElementById('container2').childNodes)
+                const removelement = Array.from(document.querySelectorAll('[data-page-number_]')).map(item => (item.dataset.pageNumber_))
                 removelement.map(item => {
-                        removeDivById(item.id)
+                        removeDivById(item)
+
                 })
 
         }, [numberOfColumns])
@@ -512,8 +529,8 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
 
                                 let data = await createAllCanvasesFORme(missingNumbers, scale, newPageDetails)
 
-                                duplicates.map(item => removeDivById(grandParentDataAtribute + item))
-                                outOfRangeNumbers.map(item => removeDivById(grandParentDataAtribute + item))
+                                duplicates.map(item => removeDivById(item))
+                                outOfRangeNumbers.map(item => removeDivById(item))
                                 document.getElementById('container2').style.top = `${top}px`
                                 if (data.length > 0)
                                         missingNumbers.forEach((number, index) => {
@@ -566,14 +583,80 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
         }, [removedRow, numberOfColumns, removedElementArr, newPageDetails, numPages])
 
 
+        /////////////////////////////////   CREATE IMG   /////////////////////////////////
+
+        const createBASE64 = async () => {
+                const createImage = [];
+                const uniquePageNumbers = thumbnail.map(item => item.pageNo - 1)
+
+                createImageSelected.map(item => {
+                        if (!uniquePageNumbers.includes(item) && item)
+                                createImage.push(createCanvas(item, pageDetails[item].rotate, 0.2, pageDetails[item]))
+
+                })
+
+
+
+
+                const tempImageArray = await Promise.all(createImage);
+                const imageArray = tempImageArray.map(canvas => {
+                        return {
+                                image: canvas.element.toDataURL('image/png'),
+                                pageNo: canvas.pageNumber,
+                                rotation: canvas.rotation
+                        }
+                })
+                setThumbnail(prev => {
+                        const filteredPrev = prev.filter(item => !createImageSelected.includes(item.pageNo));
+                        return [
+                                ...filteredPrev,
+                                ...imageArray
+                        ];
+                });
+
+        }
+        useEffect(() => {
+                if (createImageSelected.length > 0) {
+                        createBASE64()
+                }
+
+        }, [createImageSelected])
+        //////////////////////    Load Single view      ////////////////////////////////
+        const handleDoubleClick = async (event,jaba) => {
+                if (event.target.tagName === 'CANVAS') {
+                        setShowModal(true);
+
+                        
+                        let currentCanvas = Number(event.target.id.split('_')[1])
+                        const maxWidth =  window.innerWidth/100*80
+                        const newScale =   Number((   (maxWidth / jaba[currentCanvas].width )-0.05 ).toFixed(2)) 
+                        
+
+                        let canvas = await createCanvas(currentCanvas, jaba[currentCanvas].rotate,newScale, jaba[currentCanvas])
+                        const modalDiv =  document.getElementById('modalCanvas')
+                let         pageContainer = document.createElement("div");
+                pageContainer.innerHTML = 'hihiiii'
+                        if (modalDiv) {
+                                modalDiv.style.width = `${canvas.element.width}px`
+                                        modalDiv.appendChild(canvas.element);
+                                      }
+
+                        
+                        
+
+                }
+
+        }
+
+        /////////////////////////////////   CHECKBOX    /////////////////////////////////
 
         useEffect(() => {
+
                 setSelected(Array.from({ length: totalPages }).fill(false))
 
-
-
         }, [totalPages])
-        console.log(selected, "@@@@@@@@@@@@@@")
+
+
         function handleSelectCheckbox(selected) {
                 selected.forEach((state, index) => {
                         const checkbox = document.getElementById("myCheckbox_" + index.toString());
@@ -582,22 +665,34 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
                         }
                 });
         }
-
+        
+        
         useEffect(() => {
-                const checkboxContainer = document.getElementById('container2')
-                checkboxContainer.addEventListener('click', handleCheckbox)
-
+                const checkboxContainer = document.getElementById('container2');
+            
+                const handleDblClick = (e) => handleDoubleClick(e, pageDetails,canvasContainerRef);
+            
+                checkboxContainer.addEventListener('click', handleCheckbox);
+                checkboxContainer.addEventListener('dblclick', handleDblClick);
+                
                 return () => {
-                        checkboxContainer.removeEventListener('wheel', handleWheel)
-                }
-        }, [])
+                    checkboxContainer.removeEventListener('click', handleCheckbox);
+                    checkboxContainer.removeEventListener('dblclick', handleDblClick);
+                };
+            }, [pageDetails,canvasContainerRef]);
+
+
         let lastcheckedTemp = null
         async function handleCheckbox(event) {
 
+                let createImageSelectedTemp = []
+                if (event.target.type === 'checkbox' || event.target.tagName === 'CANVAS') {
+                        let currentChecked = null
+                        if (event.target.type === 'checkbox') {
 
+                                currentChecked = Number(event.target.id.split('_')[1])
+                        }
 
-                if (event.target.type === 'checkbox') {
-                        const currentChecked = event.target.id;
 
                         await setLastChecked(prev => {
                                 lastcheckedTemp = prev
@@ -608,12 +703,17 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
                                 checkboxes = prev
                                 return prev
                         })
+
+                        if ((event.shiftKey || event.ctrlKey) && event.target.tagName === 'CANVAS') {
+
+                                currentChecked = Number(event.target.id.split('_')[1])
+
+                        }
                         if (event.shiftKey && lastcheckedTemp !== null) {
                                 // Get the indices of the checkboxes
 
-
                                 const start = lastcheckedTemp
-                                const end = Number(currentChecked.split('_')[1]);
+                                const end = currentChecked
                                 lastcheckedTemp = (null)
                                 setLastChecked(null)
                                 // Select all checkboxes between the last checked and the current one
@@ -624,30 +724,39 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
                                         else {
                                                 checkboxes[i] = !checkboxes[i];
                                         }
+                                        if (checkboxes[i])
+                                                createImageSelectedTemp.push(i)
                                 }
-                                handleSelectCheckbox(checkboxes)
+                                // handleSelectCheckbox(checkboxes)
                                 setSelected(checkboxes)
+                                setCreateImageSelected(prev => [...prev, ...createImageSelectedTemp])
+                        handleSelectCheckbox(checkboxes)
                         } else {
                                 if (event.shiftKey) {
-                                        lastcheckedTemp = (Number(currentChecked.split('_')[1]))
+                                        lastcheckedTemp = currentChecked
 
                                 } else {
                                         lastcheckedTemp = (null)
 
                                 }
                                 setLastChecked(lastcheckedTemp)
-                                let index = Number(currentChecked.split('_')[1]);
-                                checkboxes[index] = event.target.checked;
+                                let index = currentChecked
+                                checkboxes[index] = !checkboxes[index];
+                                if (checkboxes[index])
+                                        createImageSelectedTemp.push(currentChecked)
                                 setSelected(checkboxes)
+                                
+                                setCreateImageSelected(prev => [...prev, ...createImageSelectedTemp])
+                                handleSelectCheckbox(checkboxes)
                         }
-
 
                 }
         }
 
 
 
-        ///////////////////   split    /////////////////////
+
+        /////////////////////////////////     split      /////////////////////////////////
         useEffect(() => {
 
                 let newPageDetails = [...pageDetails]
@@ -675,7 +784,7 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
 
 
 
-        /////////////////////////////////        EDIT    ////////////////////
+        /////////////////////////////////        EDIT    /////////////////////////////////
         useEffect(() => {
                 let newPageDetails = [...pageDetails]
                 let selectedTemp = selected;
@@ -695,8 +804,41 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
 
                         Array.from(document.getElementById('container2').childNodes).map(item => item.remove())
                 }
-                console.log('%%%%%%%%%%%%%%%%5')
         }, [editPage])
+
+
+        /////////////////////////////////        ROTATE     /////////////////////////////////
+        // const handleRotate = (rotate) => {
+
+        //         const DomActiveElement = Array.from(document.getElementById("container2").childNodes)
+        //         const domactiveElemNum = DomActiveElement.map(item => Number(item.id.split('_')[1]) - 1)
+        //         const indices = selected.map((value, index) => value ? index + 1 : -1) // Map true values to their indices, false values to -1
+        //                 .filter(index => index !== -1);
+        //         const commonElements = indices.filter(value => domactiveElemNum.includes(value))
+
+
+        //         const pageDetailsTemp = pageDetails
+
+        //         const pagePromises = [];
+        //         commonElements.map(item => {
+        //                 const newRotation = Math.abs((currentRotation + direction * 90) % 360);
+        //                 pageDetailsTemp[item].rotate = newRotation
+        //                 pagePromises.push(createCanvas(newPageDetails[item].pageNumber, newRotation, scaleFactor, newPageDetails[item]));
+        //         })
+        //         const rotatedCanvas = Promise.all(pagePromises)
+        //         rotatedCanvas.map(item => {
+        //                 const div = document.getElementById(` ${pdfPageNumber + item.pageNumber}`)
+        //                 const canvas = div.querySelector('canvas')
+        //                 if (canvas) {
+        //                         div.removeChild(canvas);
+        //                 }
+        //                 div.appendChild(item.element)
+        //         })
+
+        //         setNewPageDetails(pageDetailsTemp)
+        //         setPageDetails(pageDetailsTemp)
+
+        // }
 
 
         return (
@@ -750,6 +892,14 @@ const FileSplit = ({ dummyData: removedElementArr, editPage, block, selected, se
 
                                 </div>
                         </div>
+                        <Modal 
+                        className="fileSplitModal"
+                        show={showModal} onHide={handleClose} backdrop="true" keyboard={true}>
+
+                                <Modal.Body>
+                                <div ref={canvasContainerRef} id='modalCanvas' style={{ textAlign: 'center' }}></div>                            </Modal.Body>
+                                {/* No footer or close button */}
+                        </Modal>
                 </div>
         )
 }

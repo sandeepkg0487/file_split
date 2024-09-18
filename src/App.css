@@ -1,0 +1,8 @@
+.fileSplitModal .modal-content {
+        background-color: rgba(255, 255, 255, 0);
+        border: none;
+}
+
+.fileSplitModal .modal-dialog    {
+        margin-left: 20%;
+}
